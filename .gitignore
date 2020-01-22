@@ -1,3 +1,5 @@
+#Mac Auto Generated File
+*.DS_Store
 *.gem
 *.rbc
 /.config
