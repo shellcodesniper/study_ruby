@@ -712,6 +712,790 @@ http://localhost:3000/posts.xml 을 요청하게되면, XML 포맷의 글 목록
 
 
 
-### 레이아웃 수정하기! [6.8 까지 작성]
+### 레이아웃 수정하기!
 
-https://rubykr.github.io/rails_guides/getting_started.html
+뷰는 오직 웹 브라우저에 HTML 을 보여주기 위한 부분이랍니다.
+
+레일즈는 뷰를 포함하는 레이아웃 이라는 개념을 가지고 있는데, 레일즈 > 브라우저로 뷰를 보내줄때, 뷰의 HTML을 레이아웃의 HTML에 집어 넣습니다.
+
+레일즈 3.0에서는 어플리케이션 전체에 사용되는 레이아웃을 모든 컨트롤러에 사용하고, **app/views/layouts/application.html.erb** 파일에서 확인 할 수 있답니다.
+
+열어볼까요?
+
+```erb
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>TestBlog</title>
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
+    <%= javascript_pack_tag 'application', 'data-turbolinks-track': 'reload' %>
+  </head>
+
+  <body>
+    <%= yield %>
+  </body>
+</html>
+
+```
+
+이렇게 되어있는데 한번 배경을 회색으로 바꿔볼까요?
+
+```erb
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>TestBlog</title>
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
+    <%= javascript_pack_tag 'application', 'data-turbolinks-track': 'reload' %>
+  </head>
+
+  <body style="background: #EEEEEE;">
+    <%= yield %>
+  </body>
+</html>
+
+```
+
+이렇게 수정하고 다음 명령어를 실행후
+
+```bash
+rails server
+```
+
+http://localhost:3000/ 으로 접속해보세요!
+
+배경이 회색으로 변경되었을겁니다!
+
+
+
+## 새 포스트 만들기
+
+새로운 포스트 만들기는 두개의 액션과 관련이있답니다.
+
+
+
+빈 Post 객체를 이용하는 new 액션
+
+```ruby
+def new
+	@post = Post.new
+  
+  respond_to do |format|
+    	format.html # new.html.erb
+    format.xml	{ render : xml => @post}
+  end
+end
+```
+
+new.html.erb 뷰는 이 비어있는 Post를 사용자에게 보여줍니다.
+
+```erb
+<h1>New post</h1>
+<%= render 'form' %>
+<%= link_to 'Back', posts_path %>
+```
+
+<%= render 'form' %> 줄은 레일즈의 partials 이라네요
+
+이 조각은 HTML과 루비 코드의 조각으로 여러 장소에서 재사용할 수 있답니다.
+
+새로운 글을 만드는 폼이 글을 수정하는 폼과 동일하다네요, 양쪽 모두 이름과 제목을 위한 텍스트 필드와 본문을 위한 텍스트 영역을 가지고 새로운 글을 만들거나 존재하는 글을 수정한답니다.
+
+
+
+**views/posts/\_form.html.erb** 파일을 보면
+
+```erb
+<%= form_with(model: post, local: true) do |form| %>
+  <% if post.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(post.errors.count, "error") %> prohibited this post from being saved:</h2>
+
+      <ul>
+        <% post.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= form.label :name %>
+    <%= form.text_field :name %>
+  </div>
+
+  <div class="field">
+    <%= form.label :title %>
+    <%= form.text_field :title %>
+  </div>
+
+  <div class="field">
+    <%= form.label :content %>
+    <%= form.text_area :content %>
+  </div>
+
+  <div class="actions">
+    <%= form.submit %>
+  </div>
+<% end %>
+
+```
+
+이 조각은 뷰 파일이 호출될 때 정의된 모든 인스턴스 변수를 받는답니다. 그래서 이 경우, 컨트롤러는 새로운 Post 객체를 @post에 할당했기 때문에 뷰와 조각은 모두 @post를 사용할 수 있다네요
+
+>   조각(partial)에 대한 더많은 정보를 원하시면 [레이아웃(Layouts)과 렌더링](https://rubykr.github.io/rails_guides/:layouts_and_rendering.html#using-partials) guide 를 참고하세요.
+
+form_for 블록은 html 폼을 만드는데 사용된다는군요.
+
+이 블럭 안에서 폼에 대한 다양한 컨트롤을 만드는 메소드를 사용할 수 있답니다.
+
+ex ) f.text_field : name 은 레일즈에게 폼 위에 텍스트 인풋을 만들고, name 속성을 다루게 만듭니다.
+
+오직 이 폼메소드와 관련된 모델이 가지고 있는 속성 값으로만 이러한 메소드를 사용할 수 있다네요
+
+코드가 간결해지고, 특정한 모델 인스턴스와 폼이 명확하게 연결되기 때문에, 레일즈에서는 form_form을 html 코드 내에 사용하는걸 권장한답니다.
+
+
+
+또한 form_for 블록은 새글이나 글수정 액션을 수행할 때, 출력될 html에 폼의 action 태그와 submit 버튼의 이름을 채워준답니다.
+
+
+
+>   모델과 묶여있지 않는, 임의의 필드를 출력하는 HTML 폼을 만들때, 모델 인스턴스와 관계없는 폼을 만드는 기능을 가진 `form_tag` 메소드를 사용하세요.
+
+사용자가 Create Post 버튼을 폼에서 클릭하면, 브라우저는 컨트롤러의 create에 정보를 보낸답니다.
+
+>   **app/controllers/post_controller.rb**
+
+```ruby
+  # POST /posts
+  # POST /posts.json
+  def create
+    @post = Post.new(post_params)
+
+    respond_to do |format|
+      if @post.save
+        format.html { redirect_to @post, notice: 'Post was successfully created.' }
+        format.json { render :show, status: :created, location: @post }
+      else
+        format.html { render :new }
+        format.json { render json: @post.errors, status: :unprocessable_entity }
+      end
+    end
+  end
+```
+
+create 액션은 폼에서 사용자가 제공한 정보로부터, 레일즈가 만들어낸 param 해쉬를 기반으로 새로운 Post 객체를 생성한답니다.
+
+새로운 글이 성공적으로 저장된 이후에, create 는 사용자 요청에 적합한 포맷을 반환한답니다. 이 경우 사용자는 show 액션으로 리다이렉트되어 글이 성공적으로 작성된 것을 확인할 수 있습니다.
+
+
+
+글의 저장이 성공하지 못하면, 데이터 검증 관련 에러를 발생시키고, 컨트롤러는 new 액션으로 사용자를 안내한 후에 에러 메세지를 출력하여 에러를 수정하도록 합니다.
+
+
+
+"Post was successfully create." 라는 메세지가 레일즈의 flash 해쉬에 저장된 후, 이 성공 메세지는 다른액션에도 전달될 수 있어서 사용자에게 진행 된 요청의 상태 정보를 제공합니다. create 경우에 사용자는 글이 생성 중에는 볼수있는 페이지가 없습니다.
+
+Flash는 다음 액션에도 메세지를 보관하고 있습니다. 그래서, 사용자가 show 액션으로 리다이렉트 되어도 "Post was successfully create."를 확인할 수 있다는군요
+
+
+
+## 글 보여주기
+
+인덱스 페이지에서 글 하나를 위한 show 링크를 클릭하면, 레일즈는
+
+http://localhost:3000/posts/1 같은 모양으로 이동합니다.
+
+레일즈는 이걸 해석하여 해당 리소스를 위한 show 액션을 호출하고, 파라미터 id 에 1을 담아 넘깁니다.
+
+>   **app/controllers/post_controller.rb**
+
+```ruby
+def show
+	
+  end
+```
+
+이렇게 되어있는데 아래 내용이랑 같은 역할을 합니다
+
+```ruby
+ def show
+	@post = Post.find(params[:id])
+ 
+	respond_to do |format|
+		format.html # show.html.erb
+		format.xml  { render :xml => @post }
+	end
+  end
+```
+
+show 액션은 id 값을 이용하여, 데이터베이스에 있는 글에 해당하는 레코드를 Post.find 를 이용하여 찾습니다.
+
+레코드를 찾은 후, 레일즈는 show.html.erb 를 이용하여 화면에 출력합니다.
+
+**app/views/posts/show.html.erb**
+
+```erb
+<p id="notice"><%= notice %></p>
+
+<p>
+  <strong>Name:</strong>
+  <%= @post.name %>
+</p>
+
+<p>
+  <strong>Title:</strong>
+  <%= @post.title %>
+</p>
+
+<p>
+  <strong>Content:</strong>
+  <%= @post.content %>
+</p>
+
+<%= link_to 'Edit', edit_post_path(@post) %> |
+<%= link_to 'Back', posts_path %>
+
+```
+
+
+
+
+
+## 글 수정하기
+
+새로운 글을 만드는 것과 비슷하게, 글을 수정하는건 두가지 과정으로 이루어진답니다.
+
+1.  원하는 글에 edit_post_path(@post) 요청
+
+    ```ruby
+    def edit
+    	@post = Post.find(params[:id])
+    end
+    ```
+
+    
+
+2.  edit.html.erb 뷰를 이용해서 이를 츌럭
+
+    ```erb
+    <h1>Editing post</h1>
+     
+    <%= render 'form' %>
+     
+    <%= link_to 'Show', @post %> |
+    <%= link_to 'Back', posts_path %>
+    ```
+
+    
+
+3.  Update Post 를 클릭하여 요청 전송
+
+4.  위 폼에서 이루어진 요청을 컨트롤러의 update 액션을 호출하여 처리
+
+    >   **app/controllers/posts_controller.rb**
+
+    ```ruby
+      # PATCH/PUT /posts/1
+      # PATCH/PUT /posts/1.json
+      def update
+        respond_to do |format|
+          if @post.update(post_params)
+            format.html { redirect_to @post, notice: 'Post was successfully updated.' }
+            format.json { render :show, status: :ok, location: @post }
+          else
+            format.html { render :edit }
+            format.json { render json: @post.errors, status: :unprocessable_entity }
+          end
+        end
+      end
+    ```
+
+    update 액션에서, 레일즈는 처음에 수정 뷰가 넘긴 :d 파라미터를 이용하여 데이터베이스에 있는 목표 레코드 위치를 찾아 낸답니다.
+
+    그리고 update_attributes를 호출하여 (update 로 바뀜) 요청에서 받은 파라미터들을 해당 레코드에 적용합니다.
+
+    모든게 잘 이루어진다면 해당 글의 show 뷰로 리다이렉트 시킨답니다. 문제가 발성시에는 edit 뷰로 되돌아갑니다.
+
+
+
+## 글 지우기
+
+destroy 링크는 destroy 액션으로 관련 id를 전송합니다.
+
+**app/controllers/posts_controller.rb**
+
+```ruby
+# DELETE /posts/1
+  # DELETE /posts/1.json
+  def destroy
+    @post.destroy
+    respond_to do |format|
+      format.html { redirect_to posts_url, notice: 'Post was successfully destroyed.' }
+      format.json { head :no_content }
+    end
+  end
+```
+
+액티브 레코드 인스턴스의 destroy 메소드는 데이터베이스에 관련된 레코드를 삭제합니다.
+
+이 작업이 완료되면, 보여줄 정보가 존재하지 않아, 레일즈는 사용자 브러우저를 모델을 위한 index 뷰로 리다이렉트 시킨답니다.
+
+
+
+
+
+## 두번째 모델을 추가해볼까요?
+
+
+
+### 모델 만들기
+
+#### 레일즈에서 모델은 단수형 이름을 사용합니다.
+
+이들은 데이터베이스의 복수형으로 이름 붙여진 테이블과 상호 작용 한답니다.
+
+comments 와 관련있는 모델은 관습상 **Comment** 라는 이름을 사용한다네요
+
+대부분 레일즈 개발자들은 아직 모델과 컨트롤러 같은 요소를 만드는데 제너레이터를 이용한다네요.
+
+새로운 모델을 만들어봅시다!
+
+```bash
+rails generate model Comment commenter:string body:text post:references
+```
+
+이 명령어는 다음 4개의 파일을 만듭니다.
+
+-   app/models/comment.rb - 모델
+-   db/migrate/~~~~_create_comments.rb - 마이그레이션 파일
+-   test/unit/commnet_test.rb 유닛 테스트 더미
+-   test/fxtures/comments.yml 픽스쳐 테스트 더미
+
+
+
+**app/models/comment.rb** 를 봐봅시다!
+
+```ruby
+class Comment < ApplicationRecord
+  belongs_to :post
+end
+
+```
+
+post.rb 모델과 비슷한데 belongs_to : post 라는 항목이 새로 들어왔군요
+
+post:references 라는 항목때문에 들어온것 같은데
+
+레코드의 관계를 정의하는 규칙이라고하네요
+
+
+
+모델과 더불어 레일즈는 테이블 생성 마이그레이션도 만든답니다.
+
+**db/migrate/~~~~_create_coments.rb**
+
+```ruby
+class CreateComments < ActiveRecord::Migration[6.0]
+  def change
+    create_table :comments do |t|
+      t.string :commenter
+      t.text :body
+      t.references :post, null: false, foreign_key: true
+
+      t.timestamps
+    end
+  end
+end
+
+```
+
+t.references 줄은 두 모델 사이 외래키 관계를 설정한답니다.
+
+아래 명령어를 실행하여 마이그레이션을 진행해볼까요?
+
+```bash
+rake db:migrate
+```
+
+
+
+## 모델 관계 설정하기
+
+액티브 레코드 관계는 두개의 모델의 관계를 손쉽게 정의하게 만들어 준답니다. 글과 댓글의 경우의 관계는 다음과 같이 표현할 수 있답니다.
+
+-   각 댓글은 하나의 글에 속한다.
+-   하나의 글은 많은 댓글을 가질 수 있다.
+
+comments.rb 파일과 migrate 파일
+
+>   액티브 레코드 관계(Associations)에 대한 더 많은 정보는 [액티브 레코드 Association](https://rubykr.github.io/rails_guides/association_basics.html) 가이드를 참고하세요.
+
+>   모델에서도 관계를 말해줘야겠죠 ?
+>
+>   **app/models/comment.rb**
+
+```ruby
+class Comment < ActiveRecord::Base
+  belongs_to :post
+end
+```
+
+
+
+>   이제 Post 모델에도 Comment가 여러개 달릴 수 있다는걸 알려줘야됩니다!
+>
+>   **app/models/post.rb**
+
+```ruby
+class Post < ActiveRecord::Base
+  validates :name,  :presence => true
+  validates :title, :presence => true,
+                    :length => { :minimum => 5 }
+ 
+  has_many :comments
+end
+```
+
+
+
+### 댓글을 위한 라우팅 규칙 추가하기
+
+home 컨트롤러와 같이, 라우팅 규칙을 추가하여 레일즈가 comments 로 가는 방법을 알게 만들어야겠죠?
+
+**config/routes.rb** 파일을 열면 제너레이터에 의해 파일 꼭대기 근처에 posts 를 위한 규칙이 자동으로 추가되었을겁니다.
+
+이를 아래와같이 수정해봅시다!
+
+```ruby
+resources :posts do
+  resources :comments
+end
+```
+
+이 구문은 comments를 posts 를 포함하는 중첩 리소스로 만든답니다. 이 규칙은 글과 댓글 사이에 계층적인 관계를 포착할 수 있는 부분이라고 하네요
+
+
+
+
+>   라우팅에 대한 더 많은 정보는 [외부 요청에 대한 레일즈 라우팅](https://rubykr.github.io/rails_guides/routing.html) 가이드를 참고하세요.
+
+
+
+### 컨트롤러 만들기
+
+```bash
+rails generate controller Comments
+```
+
+
+
+이 명령은 4개의 파일과 1개의 빈 디렉토리를 만듭니다.
+
+-   `app/controllers/comments_controller.rb` – 컨트롤러
+-   `app/helpers/comments_helper.rb` – 뷰 헬퍼 파일
+-   `test/functional/comments_controller_test.rb` – 컨트롤러를 위한 기능 테스트
+-   `test/unit/helpers/comments_helper_test.rb` – 헬퍼를 위한 유닛 테스트
+-   `app/views/comments/` – 컨트롤러의 뷰
+
+글을 보는 페이지 뷰 **/app/views/posts/show.html.erb**  파일을 열어봅시다
+
+그리고 이제 새로운 댓글 만들기와 연결시켜봅시다!
+
+```erb
+<p id="notice"><%= notice %></p>
+
+<p>
+  <strong>Name:</strong>
+  <%= @post.name %>
+</p>
+
+<p>
+  <strong>Title:</strong>
+  <%= @post.title %>
+</p>
+
+<p>
+  <strong>Content:</strong>
+  <%= @post.content %>
+</p>
+
+<h2>Add a comment:</h2>
+<%= form_for([@post, @post.comments.build]) do |f| %>
+  <div class="field">
+    <%= f.label :commenter %><br />
+    <%= f.text_field :commenter %>
+  </div>
+  <div class="field">
+    <%= f.label :body %><br />
+    <%= f.text_area :body %>
+  </div>
+  <div class="actions">
+    <%= f.submit %>
+  </div>
+<% end %>
+
+<%= link_to 'Edit', edit_post_path(@post) %> |
+<%= link_to 'Back', posts_path %>
+
+```
+
+새로운 댓글을 만들기 위한 폼을 Post의 show 페이지에 추가합니다. 이 폼은 `CommentsController`의 `create` 액션을 호출할 것입니다. 그래서 이렇게 작성합니다.:
+
+>   **app/controllers/comment_controller.rb**
+
+```ruby
+class CommentsController < ApplicationController
+  def create
+    @post = Post.find(params[:post_id])
+    @comment = @post.comments.create(params[:comment])
+    redirect_to post_path(@post)
+  end
+end
+```
+
+
+
+중첩 라우팅 설정의 결과로 좀더 복잡해 보인다네요
+
+댓글을 위한 각 요청은 해당 댓글이 속하게 될 글을 따라간답니다. 그래서 글 모델을 찾는 코드가 있다는군요
+
+
+
+관계를 위한 메소드는 몇가지 장점을 가지고 온답니다.
+
+댓글을 만들고 저장하기 위해 @post.comments 상의 create 메소드를 사용합니다. 그런데 이 메소드는 글과 댓글을 자동으로 연결하여 댓글을 특정한 글에 속하게 만든다네요!
+
+새로운 댓글을 만들고 나면, 컨트롤러는 사용자를 post_path(@post) 헬퍼를 이용해 원래의 글 페이지로 보내버립니다.
+
+이 호출은 PostsController의 show 액션을 호출하여 사용자에게 show.html.erb 템플릿의 출력 결과를 보여줘버립니다.
+
+
+
+## 리팩토링
+
+글과 댓글을 계속 작업한다고 칩시다.
+
+app/views/posts/show.html.erb 템플릿을 둘러보면, 이건 너무 길다고 생각되네요
+
+Partial ( 조각 ) 을 이용해 더 깔끔하게 만들어봅시다
+
+### 조각 뷰 컬렉션 렌더링하기
+
+먼저 글의 댓글을 보는 부분을 댓글 조각으로 추출해봅시다.
+
+**app/views/comments/_comment.html.erb** 를 만들고 다음 내용을 써보죠
+
+```erb
+<p>
+  <b>Commenter:</b>
+  <%= comment.commenter %>
+</p>
+ 
+<p>
+  <b>Comment:</b>
+  <%= comment.body %>
+</p>
+```
+
+그리고 **app/views/posts/show.html.erb** 를 다음과같이 변경해봅시다!
+
+```erb
+<p id="notice"><%= notice %></p>
+
+<p>
+  <strong>Name:</strong>
+  <%= @post.name %>
+</p>
+
+<p>
+  <strong>Title:</strong>
+  <%= @post.title %>
+</p>
+
+<p>
+  <strong>Content:</strong>
+  <%= @post.content %>
+</p>
+
+<h2>Add a comment:</h2>
+<%= render @post.comments %>
+<!-- 이부분이 추가되었습니다. -->
+ 
+<%= form_for([@post, @post.comments.build]) do |f| %>
+  <div class="field">
+    <%= f.label :commenter %><br />
+    <%= f.text_field :commenter %>
+  </div>
+  <div class="field">
+    <%= f.label :body %><br />
+    <%= f.text_area :body %>
+  </div>
+  <div class="actions">
+    <%= f.submit %>
+  </div>
+<% end %>
+
+<br />
+<%= link_to 'Edit', edit_post_path(@post) %> |
+<%= link_to 'Back', posts_path %>
+
+```
+
+이제 `@post.comments` 내의 각 댓글(comment)는 `app/views/comments/_comment.html.erb` 을 통해서 출력 될 것입니다. `render` 메소드는 `@post.comments` 걸랙션을 순회하면서, partial과 동일한 이름으로 각 댓글(comment)를 지역 변수로 할당합니다. 이 경우에는 `comment`가 각 partial을 위한 지역 변수로 할당됩니다.
+
+### 조각 폼 렌더링하기
+
+새로운 댓글 만드는 부분도 조각으로 옮겨볼까요?
+
+**app/views/comments/_form.html.erb_** 를 만들고 아래 내용을 넣어보세요
+
+```erb
+<%= form_for([@post, @post.comments.build]) do |f| %>
+  <div class="field">
+    <%= f.label :commenter %><br />
+    <%= f.text_field :commenter %>
+  </div>
+  <div class="field">
+    <%= f.label :body %><br />
+    <%= f.text_area :body %>
+  </div>
+  <div class="actions">
+    <%= f.submit %>
+  </div>
+<% end %>
+```
+
+그리고 다시
+
+**app/views/posts/show.html.erb** 를 수정해봅시다.
+
+```erb
+<p class="notice"><%= notice %></p>
+ 
+<p>
+  <b>Name:</b>
+  <%= @post.name %>
+</p>
+ 
+<p>
+  <b>Title:</b>
+  <%= @post.title %>
+</p>
+ 
+<p>
+  <b>Content:</b>
+  <%= @post.content %>
+</p>
+ 
+<h2>Comments</h2>
+<%= render @post.comments %>
+ 
+<h2>Add a comment:</h2>
+<%= render "comments/form" %>
+<!-- 수정된 부분 -->
+ 
+<br />
+ 
+<%= link_to 'Edit Post', edit_post_path(@post) %> |
+<%= link_to 'Back to Posts', posts_path %> |
+```
+
+
+
+### 댓글.. 지워야겠죠?
+
+CommentsController 내에 DELETE 액션을 구현해야 한답니다.
+
+
+
+그래서 먼저, `app/views/comments/_comment.html.erb` 조각(partial) 안에 삭제 링크를 추가합시다.:
+
+```erb
+<p>
+  <b>Commenter:</b>
+  <%= comment.commenter %>
+</p>
+ 
+<p>
+  <b>Comment:</b>
+  <%= comment.body %>
+</p>
+ 
+<p>
+  <%= link_to 'Destroy Comment', [comment.post, comment],
+               :confirm => 'Are you sure?',
+               :method => :delete %>
+</p>
+```
+
+이 새로운 “Destroy Comment” 링크를 클릭하면 `DELETE /posts/:id/comments/:id` 요청이 `CommentsController` 에게 전달됩니다. 이를 이용해서 삭제하기를 원하는 댓글을 찾고 기능을 구현할 수 있죠. 그러면 컨트롤러에 삭제(destroy) 액션을 추가합시다.:
+
+```ruby
+class CommentsController < ApplicationController
+  def create
+	@post = Post.find(params[:post_id])
+	puts comment_params
+	
+    @comment = @post.comments.create(comment_params)
+    redirect_to post_path(@post)
+  end
+
+  def destroy
+	@post = Post.find(params[:post_id])
+
+	@comment = @post.comments.find(params[:id])
+	@comment.destroy
+	redirect_to post_path(@post)
+  end
+
+  private
+  def comment_params
+	puts "PARAMS :"
+	puts params
+	puts ""
+    params.require(:comment).permit(:commenter, :body)
+  end
+end
+```
+
+`destroy` 액션은 목표한 글을 찾고, `@post.comments` 컬렉션 내의 목표 댓글(comment)를 찾은 후에 데이터베이스에서 그 내용을 삭제합니다. 사용자를 그후에 원래 글의 보여주기(show) 엑션으로 이동 시킵니다.
+
+
+
+### 관계된 객체까지 삭제해버리기
+
+글을 삭제한다면 연관된 댓글도 삭제해야 할것 같네요
+
+삭제하지 않는다면 연결관계를 잃어버린 댓글은 공간만 차지할것입니다.
+
+레일즈에서는 관꼐를 부영할때 dependent 옵션을 사용한다면 손쉽게 구현할 수 있다는군요!
+
+**app/models/post.rb** 를 다음과 같이 수정해봅시다
+
+```ruby
+class Post < ActiveRecord::Base
+  validates :name,  :presence => true
+  validates :title, :presence => true,
+                    :length => { :minimum => 5 }
+  has_many :comments, :dependent => :destroy
+end
+```
+
+
+
+### 보안
+
+따로 작성 안하겠습니다
+
+원본 글을 참고해주세요
+
+
+
