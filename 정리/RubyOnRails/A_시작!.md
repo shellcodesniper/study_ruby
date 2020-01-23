@@ -214,6 +214,8 @@ rails new blog
 -   public/
     -   외부에서 볼 수 있는 유일한 폴더랍니다.
     -   이미지, 자바스크립트, 스타일시트나 그 외 정적인 파일들을 넣어두면됩니다.
+-   storage/
+    -   Active Storage files for Disk Service
 -   script/
     -   레일즈 스크립트를 포함한답니다.
     -   애플리케이션 실행, 배포, 실행 관련 스크립트를 넣어두면됩니다.
@@ -397,33 +399,27 @@ rails server
 저에게는
 
 ```ruby
+
 Rails.application.routes.draw do
-  get '/home/index', to: 'home#index'
+  get 'welcome/index'
+ 
   # For details on the DSL available within this file, see https://guides.rubyonrails.org/routing.html
 end
-
 ```
 
 라고 적혀있는데
 
 ```ruby
-Rails.application.routes.draw do
-  get '/home/index', to: 'home#index'
-  root :to => 'home#index'
-  # For details on the DSL available within this file, see https://guides.rubyonrails.org/routing.html
-end
 
+Rails.application.routes.draw do
+  get 'welcome/index'
+  root 'welcome#index'
+end
 ```
 
-이렇게 작성해봅시다!
+## 이렇게 작성해봅시다!
 
-일부러 get '/home/index', to: 'home#index' 이라고 살려봤는데
-
-http://localhost:3000/ 로 접속 했을때나,
-
-http://localhost:3000/home/index 로 접속시에도 같은 화면이 나옵니다 대충 이해하겠죠..?
-
-
+이제 http://localhost:3000/ 혹은 http://lcoalhost:3000/welcome/index 로 접속시 동일하게 ㅛ시될겁니다
 
 
 
