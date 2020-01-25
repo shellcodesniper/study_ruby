@@ -419,7 +419,21 @@ end
 
 ## 이렇게 작성해봅시다!
 
-이제 http://localhost:3000/ 혹은 http://lcoalhost:3000/welcome/index 로 접속시 동일하게 ㅛ시될겁니다
+root 'welcome#index'` 라는 구문은 레일즈가 애플리케이션의 root를 welcome 컨트롤러의 index action 으로 보내버립니다.
+
+`get 'welcome/index'` 라는 구문은 레일즈가 http://localhost:3000/welcome/index 접속시 welcome 컨트롤러의 index 액션으로 보내버립니다.
+
+이 구문은 rails generate controller Welcome index 를 실행시에 만들어집니다
+
+이제 http://localhost:3000/ 혹은 http://lcoalhost:3000/welcome/index 로 접속시 동일하게 표시될겁니다
+
+또한, 레일즈는 resources 라는 표준 REST resource 를 정의 할 수 있는 메소드를 제공합니다
+
+
+
+
+
+`rails routes` 라는 명령어를 실행하면, 표준 RESTful action이 정의된 routes 들을 확인 할 수 있습니다.
 
 
 
