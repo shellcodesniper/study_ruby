@@ -486,7 +486,7 @@ https://guides.rubyonrails.org/routing.html#routing-concerns
 
 여기부터 재작성
 
-
+https://morningbird.tistory.com/42
 
 
 
