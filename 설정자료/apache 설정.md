@@ -1,5 +1,7 @@
 # Passenger 용 apache conf
 
+sudo vim /etc/apache2/mods-available/passenger.conf
+여기도 업데이트 해줘야됨!!
 
 
 ```apache
